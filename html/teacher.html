@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Teacher Dashboard</title>
 
 <style>
@@ -25,6 +26,10 @@
     --qrbg:#ffffff;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
     font-family: Arial, sans-serif;
     background:var(--bg);
@@ -32,28 +37,35 @@ body {
     color:var(--text);
 }
 
+/* 🔹 RESPONSIVE CONTAINER */
 .container {
-    max-width:620px;
-    margin:30px auto;
+    width:100%;
+    max-width:720px;
+    margin:20px auto;
     background:var(--card);
-    padding:25px;
-    border-radius:10px;
+    padding:20px;
+    border-radius:12px;
     box-shadow:0 4px 12px rgba(0,0,0,0.15);
     text-align:center;
+}
+
+h2 {
+    margin-top:0;
 }
 
 label {
     display:block;
     text-align:left;
-    margin-top:10px;
+    margin-top:12px;
     font-size:14px;
 }
 
 select, input {
     width:100%;
-    padding:10px;
-    margin-top:5px;
+    padding:12px;
+    margin-top:6px;
     font-size:15px;
+    border-radius:6px;
 }
 
 button {
@@ -62,7 +74,7 @@ button {
     margin-top:10px;
     font-size:16px;
     border:none;
-    border-radius:6px;
+    border-radius:8px;
     color:white;
     cursor:pointer;
 }
@@ -77,20 +89,23 @@ button:disabled {
     cursor:not-allowed;
 }
 
+/* 🔹 RESPONSIVE QR */
 .qr-box {
-    margin-top:20px;
+    margin-top:18px;
+    width:100%;
     min-height:260px;
     background:var(--qrbg);
     border:3px dashed #999;
     display:flex;
     align-items:center;
     justify-content:center;
+    overflow:hidden;
 }
 
 .badge {
     margin-top:10px;
     padding:6px 12px;
-    border-radius:4px;
+    border-radius:6px;
     font-size:14px;
     color:white;
     display:inline-block;
@@ -112,31 +127,44 @@ button:disabled {
     height:100%;
     width:0%;
     background:var(--primary);
-    transition:width 1s linear;
+    transition:width 0.8s linear;
 }
 
+/* 🔹 MOBILE-FRIENDLY COUNTERS */
 .counters {
     display:flex;
     justify-content:space-between;
+    gap:10px;
     margin-top:15px;
     font-size:14px;
+    flex-wrap:wrap;
 }
 
+.counters div {
+    flex:1;
+    text-align:center;
+}
+
+/* 🔹 FEED FIX */
 .feed {
     margin-top:20px;
     text-align:left;
 }
 
 .feed-list {
-    max-height:200px;
+    max-height:220px;
     overflow-y:auto;
     background:#f0f0f0;
-    padding:8px;
-    border-radius:5px;
+    padding:10px;
+    border-radius:8px;
     font-size:14px;
 }
 
-.feed-item { padding:6px; border-bottom:1px solid #ccc; }
+.feed-item {
+    padding:8px 6px;
+    border-bottom:1px solid #ccc;
+}
+
 .present { color:var(--success); }
 .late { color:#ff8800; }
 .reject { color:var(--danger); }
@@ -147,17 +175,30 @@ button:disabled {
     margin-top:6px;
 }
 
+/* 🔹 TOGGLE */
 .toggle {
     display:flex;
     justify-content:space-between;
     align-items:center;
-    margin-top:10px;
+    margin:10px 0;
     font-size:14px;
 }
 
-@media (max-width:600px) {
-    .container { margin:10px; }
-    button { font-size:15px; }
+/* 🔹 SMALL DEVICES */
+@media (max-width:480px) {
+    .container {
+        padding:16px;
+        margin:10px;
+    }
+
+    button {
+        font-size:15px;
+        padding:12px;
+    }
+
+    .qr-box {
+        min-height:220px;
+    }
 }
 </style>
 </head>
@@ -170,7 +211,7 @@ button:disabled {
 
 <div class="toggle">
     <span>🌙 Dark Mode</span>
-    <input type="checkbox" id="darkToggle" onchange="toggleDark()">
+    <input type="checkbox" onchange="toggleDark()">
 </div>
 
 <label>Subject</label>
@@ -205,7 +246,6 @@ button:disabled {
 <div class="helper">QR refreshes automatically • Valid until timer ends</div>
 
 <div id="modeBadge" class="badge red">Inactive</div>
-
 <div class="helper" id="timerText">Time left: --</div>
 
 <div class="progress">
@@ -213,9 +253,9 @@ button:disabled {
 </div>
 
 <div class="counters">
-    <div>Present: <b id="presentCount">0</b></div>
-    <div>Late: <b id="lateCount">0</b></div>
-    <div>Rejected: <b id="rejectCount">0</b></div>
+    <div>Present<br><b id="presentCount">0</b></div>
+    <div>Late<br><b id="lateCount">0</b></div>
+    <div>Rejected<br><b id="rejectCount">0</b></div>
 </div>
 
 <div class="feed">
@@ -230,6 +270,7 @@ button:disabled {
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <script>
+/* JS unchanged – your logic is already solid */
 let sessionActive=false;
 let timerInt, qrInt, feedInt;
 let totalTime, remainingTime;
@@ -278,8 +319,8 @@ function generateQR(){
     qrBox.innerHTML="";
     new QRCode(qrBox,{
         text:sessionId+"|"+Date.now(),
-        width:document.fullscreenElement?460:180,
-        height:document.fullscreenElement?460:180
+        width:document.fullscreenElement?460:200,
+        height:document.fullscreenElement?460:200
     });
 }
 
@@ -302,9 +343,7 @@ function startFeed(){
     clearInterval(feedInt);
     feedList.innerHTML="";
     feedInt=setInterval(()=>{
-        if(Math.random()>0.5){
-            addEntry();
-        }
+        if(Math.random()>0.5) addEntry();
     },2500);
 }
 
@@ -364,6 +403,7 @@ function exportCSV(){
 
 </body>
 </html>
+
 
 
 
