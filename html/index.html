@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Attendance System</title>
+
+    <!-- Basic CSS styling -->
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+
+            /* Center content */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+        }
+
+        .container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 300px;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-size: 22px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: 16px;
+            cursor: pointer;
+
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main container -->
+    <div class="container">
+        <h1>Smart Attendance</h1>
+
+        <!-- Teacher login button -->
+        <button onclick="goToTeacher()">
+            Login as Teacher
+        </button>
+
+        <!-- Student login button -->
+        <button onclick="goToStudent()">
+            Login as Student
+        </button>
+    </div>
+
+    <!-- Simple JavaScript for redirection -->
+    <script>
+        // Redirects user to teacher page
+        function goToTeacher() {
+            window.location.href = "teacher.html";
+        }
+
+        // Redirects user to student page
+        function goToStudent() {
+            window.location.href = "student.html";
+        }
+    </script>
+
+</body>
+</html>

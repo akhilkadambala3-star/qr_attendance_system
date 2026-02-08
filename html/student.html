@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Attendance</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    background:#f4f6f8;
+    margin:0;
+}
+
+.container {
+    width:380px;
+    margin:80px auto;
+    background:white;
+    padding:25px;
+    border-radius:8px;
+    text-align:center;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+button {
+    width:100%;
+    padding:12px;
+    font-size:16px;
+    background:#28a745;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:disabled {
+    background:#aaa;
+    cursor:not-allowed;
+}
+
+#reader {
+    margin-top:15px;
+}
+
+.status-box {
+    margin-top:20px;
+    padding:15px;
+    border-radius:6px;
+    font-size:16px;
+    display:none;
+}
+
+.success { background:#d4edda; color:#155724; }
+.late { background:#fff3cd; color:#856404; }
+.error { background:#f8d7da; color:#721c24; }
+.info { background:#e2e3e5; color:#383d41; }
+
+.icon {
+    font-size:32px;
+    margin-bottom:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>Student Attendance</h2>
+
+<button id="scanBtn" onclick="startScan()">Scan QR Code</button>
+
+<div id="reader"></div>
+
+<div id="statusBox" class="status-box info">
+    <div class="icon">ℹ️</div>
+    Waiting for scan...
+</div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+let html5QrCode;
+let scanLocked = false;
+let lastScanTime = 0;
+const COOLDOWN = 15000; // 15 seconds
+
+function showStatus(type, icon, message){
+    const box=document.getElementById("statusBox");
+    box.className="status-box "+type;
+    box.innerHTML=`<div class="icon">${icon}</div>${message}`;
+    box.style.display="block";
+}
+
+function startScan(){
+    if(scanLocked){
+        showStatus("error","⏳","Scan locked. Please wait.");
+        return;
+    }
+
+    showStatus("info","📷","Scanning QR...");
+    html5QrCode=new Html5Qrcode("reader");
+
+    html5QrCode.start(
+        { facingMode:"environment" },
+        { fps:10, qrbox:250 },
+        (decodedText)=>{
+            html5QrCode.stop();
+            processQR(decodedText);
+        }
+    );
+}
+
+function processQR(data){
+    const now = Date.now();
+
+    // QR expiry simulation (QR valid for 20s)
+    if(now - parseInt(data.split("|")[1]) > 20000){
+        showStatus("error","⌛","QR expired. Wait for refresh.");
+        return;
+    }
+
+    // Lock scanning
+    scanLocked = true;
+    document.getElementById("scanBtn").disabled = true;
+    setTimeout(()=>{
+        scanLocked = false;
+        document.getElementById("scanBtn").disabled = false;
+    }, COOLDOWN);
+
+    // Simulated logic
+    const insideClassroom = Math.random() > 0.2;
+    const lateMode = Math.random() > 0.6;
+
+    if(!insideClassroom){
+        showStatus("error","❌","Outside classroom. Attendance rejected.");
+        return;
+    }
+
+    if(lateMode){
+        showStatus("late","⏱","Attendance marked: LATE");
+    } else {
+        showStatus("success","✔","Attendance marked: PRESENT");
+    }
+}
+</script>
+
+</body>
+</html>
+
+
+
+
+

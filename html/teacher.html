@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Teacher Dashboard</title>
+
+<style>
+:root {
+    --bg:#f4f6f8;
+    --card:#ffffff;
+    --text:#000;
+    --muted:#666;
+    --primary:#007bff;
+    --danger:#dc3545;
+    --success:#28a745;
+    --warning:#ffc107;
+    --qrbg:#ffffff;
+}
+
+.dark {
+    --bg:#121212;
+    --card:#1e1e1e;
+    --text:#f1f1f1;
+    --muted:#aaa;
+    --qrbg:#ffffff;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background:var(--bg);
+    margin:0;
+    color:var(--text);
+}
+
+.container {
+    max-width:620px;
+    margin:30px auto;
+    background:var(--card);
+    padding:25px;
+    border-radius:10px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    text-align:center;
+}
+
+label {
+    display:block;
+    text-align:left;
+    margin-top:10px;
+    font-size:14px;
+}
+
+select, input {
+    width:100%;
+    padding:10px;
+    margin-top:5px;
+    font-size:15px;
+}
+
+button {
+    width:100%;
+    padding:14px;
+    margin-top:10px;
+    font-size:16px;
+    border:none;
+    border-radius:6px;
+    color:white;
+    cursor:pointer;
+}
+
+.primary { background:var(--primary); }
+.danger { background:var(--danger); }
+.secondary { background:#6c757d; }
+.infoBtn { background:#17a2b8; }
+
+button:disabled {
+    opacity:0.6;
+    cursor:not-allowed;
+}
+
+.qr-box {
+    margin-top:20px;
+    min-height:260px;
+    background:var(--qrbg);
+    border:3px dashed #999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.badge {
+    margin-top:10px;
+    padding:6px 12px;
+    border-radius:4px;
+    font-size:14px;
+    color:white;
+    display:inline-block;
+}
+
+.green { background:var(--success); }
+.yellow { background:var(--warning); color:black; }
+.red { background:var(--danger); }
+
+.progress {
+    height:10px;
+    background:#ddd;
+    border-radius:5px;
+    margin-top:12px;
+    overflow:hidden;
+}
+
+.progress-bar {
+    height:100%;
+    width:0%;
+    background:var(--primary);
+    transition:width 1s linear;
+}
+
+.counters {
+    display:flex;
+    justify-content:space-between;
+    margin-top:15px;
+    font-size:14px;
+}
+
+.feed {
+    margin-top:20px;
+    text-align:left;
+}
+
+.feed-list {
+    max-height:200px;
+    overflow-y:auto;
+    background:#f0f0f0;
+    padding:8px;
+    border-radius:5px;
+    font-size:14px;
+}
+
+.feed-item { padding:6px; border-bottom:1px solid #ccc; }
+.present { color:var(--success); }
+.late { color:#ff8800; }
+.reject { color:var(--danger); }
+
+.helper {
+    font-size:13px;
+    color:var(--muted);
+    margin-top:6px;
+}
+
+.toggle {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-top:10px;
+    font-size:14px;
+}
+
+@media (max-width:600px) {
+    .container { margin:10px; }
+    button { font-size:15px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="app">
+
+<h2>Teacher Dashboard</h2>
+
+<div class="toggle">
+    <span>🌙 Dark Mode</span>
+    <input type="checkbox" id="darkToggle" onchange="toggleDark()">
+</div>
+
+<label>Subject</label>
+<select id="subject">
+    <option>DBMS</option>
+    <option>OS</option>
+    <option>CN</option>
+    <option>Web Dev</option>
+</select>
+
+<label>Class / Section</label>
+<select id="classSection">
+    <option>CSE-A</option>
+    <option>CSE-B</option>
+    <option>CSE-C</option>
+</select>
+
+<label>Attendance Duration (seconds)</label>
+<input type="number" id="duration" value="120">
+
+<label>QR Refresh Interval (seconds)</label>
+<input type="number" id="refresh" value="20">
+
+<label><input type="checkbox" id="lateMode"> Enable Late Attendance</label>
+
+<button class="primary" id="startBtn" onclick="startAttendance()">Take Attendance</button>
+<button class="danger" id="endBtn" onclick="endAttendance()" disabled>End Attendance</button>
+<button class="secondary" onclick="toggleFullscreen()">Full Screen QR</button>
+<button class="infoBtn" onclick="exportCSV()">Export Attendance (CSV)</button>
+
+<div class="qr-box" id="qrBox">QR will appear here</div>
+<div class="helper">QR refreshes automatically • Valid until timer ends</div>
+
+<div id="modeBadge" class="badge red">Inactive</div>
+
+<div class="helper" id="timerText">Time left: --</div>
+
+<div class="progress">
+    <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div class="counters">
+    <div>Present: <b id="presentCount">0</b></div>
+    <div>Late: <b id="lateCount">0</b></div>
+    <div>Rejected: <b id="rejectCount">0</b></div>
+</div>
+
+<div class="feed">
+<b>Live Confirmations</b>
+<div class="feed-list" id="feedList">
+    <div class="feed-item">Waiting for scans…</div>
+</div>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<script>
+let sessionActive=false;
+let timerInt, qrInt, feedInt;
+let totalTime, remainingTime;
+let present=0, late=0, rejected=0;
+let records=[];
+let sessionId="";
+
+function toggleDark(){
+    document.getElementById("app").classList.toggle("dark");
+}
+
+function startAttendance(){
+    sessionActive=true;
+    present=late=rejected=0;
+    records=[];
+    sessionId="ATTEND-"+Date.now();
+    totalTime=parseInt(duration.value);
+    remainingTime=totalTime;
+
+    startBtn.disabled=true;
+    endBtn.disabled=false;
+
+    updateBadge();
+    generateQR();
+    startTimer();
+    startQRRefresh();
+    startFeed();
+}
+
+function updateBadge(){
+    modeBadge.className="badge";
+    if(!sessionActive){
+        modeBadge.textContent="Inactive";
+        modeBadge.classList.add("red");
+    } else if(lateMode.checked){
+        modeBadge.textContent="Late Mode Enabled";
+        modeBadge.classList.add("yellow");
+    } else {
+        modeBadge.textContent="Normal Mode";
+        modeBadge.classList.add("green");
+    }
+}
+
+function generateQR(){
+    if(!sessionActive) return;
+    qrBox.innerHTML="";
+    new QRCode(qrBox,{
+        text:sessionId+"|"+Date.now(),
+        width:document.fullscreenElement?460:180,
+        height:document.fullscreenElement?460:180
+    });
+}
+
+function startTimer(){
+    clearInterval(timerInt);
+    timerInt=setInterval(()=>{
+        remainingTime--;
+        timerText.textContent="Time left: "+remainingTime+"s";
+        progressBar.style.width=((totalTime-remainingTime)/totalTime)*100+"%";
+        if(remainingTime<=0) endAttendance();
+    },1000);
+}
+
+function startQRRefresh(){
+    clearInterval(qrInt);
+    qrInt=setInterval(generateQR,refresh.value*1000);
+}
+
+function startFeed(){
+    clearInterval(feedInt);
+    feedList.innerHTML="";
+    feedInt=setInterval(()=>{
+        if(Math.random()>0.5){
+            addEntry();
+        }
+    },2500);
+}
+
+function addEntry(){
+    const id="STUDENT-"+Math.floor(Math.random()*100);
+    const time=new Date().toLocaleTimeString();
+    let status;
+
+    const r=Math.random();
+    if(r<0.6){ status="Present"; present++; }
+    else if(r<0.8){ status="Late"; late++; }
+    else { status="Rejected"; rejected++; }
+
+    records.push({id,status,time});
+    const div=document.createElement("div");
+    div.className="feed-item "+status.toLowerCase();
+    div.textContent=`${id} • ${status} • ${time}`;
+    feedList.appendChild(div);
+    feedList.scrollTop=feedList.scrollHeight;
+
+    presentCount.textContent=present;
+    lateCount.textContent=late;
+    rejectCount.textContent=rejected;
+}
+
+function endAttendance(){
+    sessionActive=false;
+    clearInterval(timerInt);
+    clearInterval(qrInt);
+    clearInterval(feedInt);
+    qrBox.textContent="Attendance Closed";
+    startBtn.disabled=false;
+    endBtn.disabled=true;
+    updateBadge();
+}
+
+function toggleFullscreen(){
+    if(!document.fullscreenElement){
+        qrBox.requestFullscreen();
+    } else {
+        document.exitFullscreen();
+    }
+}
+document.addEventListener("fullscreenchange",generateQR);
+
+function exportCSV(){
+    if(records.length===0){ alert("No data"); return; }
+    let csv="Student ID,Status,Time\n";
+    records.forEach(r=>csv+=`${r.id},${r.status},${r.time}\n`);
+    const blob=new Blob([csv],{type:"text/csv"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="attendance.csv";
+    a.click();
+}
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
